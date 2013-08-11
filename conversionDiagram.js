@@ -24,17 +24,20 @@ var ConversionDiagram = new Class({
 		if(self.suppliedDataIsOk()){
 
 			// set up the visual prerequisites:
-			self.diagramContainer = d3.select(containerIdentifier).append('svg');
+			var svgElement = d3.select(containerIdentifier).append('svg');
 			var diagramWidth = 700;
-			self.diagramContainer.attr('width', diagramWidth);
+			svgElement.attr('width', diagramWidth);
 			self.diagramAreaHeight = diagramWidth * 0.70;
-			self.diagramContainer.attr('height', self.diagramAreaHeight);
+			svgElement.attr('height', self.diagramAreaHeight);
+
+			self.diagramContainer = svgElement.append('g').attr('class','diagramContainer');
+			
 
 			// set up the scaling methods:
 			self.logScale = function(x){
 				
 				if (x == 0)return x;
-				else return self.diagramAreaHeight * ((Math.log(x)/Math.log(10)) / (Math.log( d3.sum(self.dataObject[0]) )/Math.log(10)) );
+				else return self.diagramAreaHeight * ((Math.log(x)/Math.log(5)) / (Math.log( d3.sum(self.dataObject[0]) )/Math.log(5)) );
 			};
 
 			// Do the neccesary calculations:
@@ -153,14 +156,13 @@ var ConversionDiagram = new Class({
 		var enteredDataSelection = attachedData.enter();
 		var dataGroups = enteredDataSelection.append('g').attr('class','DatumGroup');
 
-		console.log(dataGroups);
 		dataGroups.each(function(datum,index){
 			
 			var dataGroup = d3.select(this);
-
+			var rectArray = [];
 			datum.each(function(subDatum, subIndex){
 
-				self.attachBlockAttrs(
+				rectArray.push(self.attachBlockAttrs(
 					dataGroup.append('rect'),
 					'Count',
 					(70 + 90) * (subIndex + 1),
@@ -168,10 +170,24 @@ var ConversionDiagram = new Class({
 					subDatum,
 					self.offsets[subIndex],
 					self.linearScales[subIndex]
-				);
+				));
 
 				self.offsets[subIndex] += self.linearScales[subIndex](subDatum);
 			});
+
+			rectArray.each(function(rect, index){
+
+				if( (index < rectArray.length - 1) ){
+
+					var conversionPath = dataGroup.append('path');
+					conversionPath.attr('class','ConversionPath');
+					conversionPath.attr('d', self.createConversionPath(rectArray[index], rectArray[index + 1]));
+
+				}
+					
+			});
+
+
 			
 		}); 
 	},
@@ -280,9 +296,9 @@ var ConversionDiagram = new Class({
 
 
 var ConversionData = [
-	[202, 300, 300, 234, 456, 356, 1003, 45],
-	[30, 29, 28, 56, 43, 12, 123, 3],
-	[34, 67, 44, 33, 9, 4, 3, 0]
+	[202, 300, 300, 234, 456, 356, 1003],
+	[30, 29, 28, 56, 43, 12, 123],
+	[8, 6, 3, 5, 9, 4, 3]
 ];
 
 
