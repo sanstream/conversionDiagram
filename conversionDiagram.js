@@ -163,7 +163,7 @@ var ConversionDiagram = new Class({
 				self.attachBlockAttrs(
 					dataGroup.append('rect'),
 					'Count',
-					(70 + 9	0) * (subIndex + 1),
+					(70 + 90) * (subIndex + 1),
 					70,
 					subDatum,
 					self.offsets[subIndex],
