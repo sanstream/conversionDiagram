@@ -8,6 +8,7 @@ var ConversionDiagram = new Class({
 	shownItemsScale: null,
 	seenItemsScale: null,
 	boughtItemsScale: null,
+	linearScales: null,
 	logScale: null,
 	totals: null, // holds an array with all the totals
 
@@ -24,7 +25,7 @@ var ConversionDiagram = new Class({
 
 			// set up the visual prerequisites:
 			self.diagramContainer = d3.select(containerIdentifier).append('svg');
-			var diagramWidth =500;
+			var diagramWidth = 700;
 			self.diagramContainer.attr('width', diagramWidth);
 			self.diagramAreaHeight = diagramWidth * 0.70;
 			self.diagramContainer.attr('height', self.diagramAreaHeight);
@@ -39,10 +40,15 @@ var ConversionDiagram = new Class({
 			// Do the neccesary calculations:
 			self.setTotals();
 			self.createConversionData();
+			self.linearScales = [];
 
-			self.shownItemsScale = d3.scale.linear().domain([0, self.totals[0] ]).range([0, self.sizes[0] ]);
-			self.seenItemsScale = d3.scale.linear().domain([0, self.totals[1] ]).range([0, self.sizes[1] ]);
-			self.boughtItemsScale = d3.scale.linear().domain([0, self.totals[2] ]).range([0, self.sizes[2] ]);	
+			for (var i = 0; i < self.dataObject.length; i++) {
+
+				self.linearScales.push( d3.scale.linear().domain([0, self.totals[i] ]).range([0, self.sizes[i] ]) );
+			};
+			 
+			
+			self.renderDiagram();
 		}
 	},
 
@@ -79,6 +85,7 @@ var ConversionDiagram = new Class({
 
 	createConversionData: function() {
 
+		// basically create a pivot table version of the original.
 		var self = this;
 
 		self.conversionData = [];
@@ -117,12 +124,12 @@ var ConversionDiagram = new Class({
 					.attr('x', xOffset + 60)
 					.attr('y', verticalOffset + scaledValue.toInt() * 0.5 + 3)
 					.attr('text-anchor','end')
-					.text(self.formatAsNonDecimalNumber(value))
+					.text(value)
 			}
 			else{
 
 				d3Element.append('title')
-					.text(self.formatAsNonDecimalNumber(value)); 	
+					.text(value); 	
 			}
 			
 		}
@@ -130,23 +137,42 @@ var ConversionDiagram = new Class({
 		return d3Element;
 	},
 
-
-	insertData: function(attachedDataSelection){
+	renderDiagram: function(){
 
 		var self = this;
 
-		var enteredDataSelection = attachedDataSelection.enter();
+		var attachedData = self.diagramContainer.selectAll('.DatumGroup').data(self.conversionData);
+		self.enterData(attachedData);
+	},
+
+
+	enterData: function(attachedData){
+
+		var self = this;
+
+		var enteredDataSelection = attachedData.enter();
 		var dataGroups = enteredDataSelection.append('g').attr('class','DatumGroup');
 
+		console.log(dataGroups);
 		dataGroups.each(function(datum,index){
 			
-			if(datum.impression != undefined){
-				
-				var dataGroup = d3.select(this);
-		
-				
+			var dataGroup = d3.select(this);
 
-			}
+			datum.each(function(subDatum, subIndex){
+
+				self.attachBlockAttrs(
+					dataGroup.append('rect'),
+					'Count',
+					(70 + 9	0) * (subIndex + 1),
+					70,
+					subDatum,
+					self.offsets[subIndex],
+					self.linearScales[subIndex]
+				);
+
+				self.offsets[subIndex] += self.linearScales[subIndex](subDatum);
+			});
+			
 		}); 
 	},
 
@@ -155,7 +181,7 @@ var ConversionDiagram = new Class({
 
 
 		var impression = 	self.attachBlockAttrs(dataGroup.append('rect'),
-																	'Impression RecordedEvent',
+																	'Count',
 																	102,
 																	80,
 																	datum.impression,
