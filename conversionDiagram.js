@@ -1,9 +1,17 @@
-
+/**
+ * @file 		conversionDiagram.js
+ * @author 		Sanne Peters
+ * @copyright 	Sanstream Creations 2013, but if you ask nicely I might let you use it for free.
+ * @description This file needs more doc blocks.
+ */
 
 var ConversionDiagram = new Class({
 
-	dataObject: null,
+	rawDataObject: null,
+	parsedDataObject: null,
+	currentDataObject: null,
 	conversionData: null,
+	orderedDates: null,
 
 	shownItemsScale: null,
 	seenItemsScale: null,
@@ -14,13 +22,19 @@ var ConversionDiagram = new Class({
 
 	diagramContainer: null,
 	diagramAreaHeight: null,
+	firstItemShown: 0,
 
-	initialize: function(dataObject, containerIdentifier){
+	/**
+	 * [initialize description]
+	 * @param  {[type]} dataObject
+	 * @param  {[type]} containerIdentifier
+	 * @return {[type]}
+	 */
+	initialize: function(dataObject, containerIdentifier,firstItemShown){
 
 		var self = this;
 		// testing data:
-		self.dataObject = dataObject;
-
+		
 		if(self.suppliedDataIsOk()){
 
 			// set up the visual prerequisites:
@@ -31,36 +45,33 @@ var ConversionDiagram = new Class({
 			svgElement.attr('height', self.diagramAreaHeight);
 
 			self.diagramContainer = svgElement.append('g').attr('class','diagramContainer');
+			self.linearScales = new Array();
 			
+
+			self.rawDataObject = dataObject;
+			// Do the neccesary calculations and data-treatment:
+			self.convertRawData();
+			self.firstItemShown = self.orderedDates[0];
+			self.currentDataObject = self.parsedDataObject[self.firstItemShown];
 
 			// set up the scaling methods:
-			self.logScale = function(x){
-				
-				if (x == 0)return x;
-				else return self.diagramAreaHeight * ((Math.log(x)/Math.log(5)) / (Math.log( d3.sum(self.dataObject[0]) )/Math.log(5)) );
-			};
-
-			// Do the neccesary calculations:
-			self.setTotals();
-			self.createConversionData();
-			self.linearScales = [];
-
-			for (var i = 0; i < self.dataObject.length; i++) {
-
-				self.linearScales.push( d3.scale.linear().domain([0, self.totals[i] ]).range([0, self.sizes[i] ]) );
-			};
-			 
-			
+			//visual rendering: 
 			self.renderDiagram();
 		}
 	},
 
+	/**
+	 * [suppliedDataIsOk description]
+	 * @return {[type]}
+	 */
 	suppliedDataIsOk: function () {
 	
 		return true;		
 	},
 
-
+	/**
+	 * [setTotals description]
+	 */
 	setTotals: function () {
 
 		var self = this;
@@ -69,15 +80,26 @@ var ConversionDiagram = new Class({
 		self.sizes = [];
 		self.offsets = [];
 
-		self.dataObject.each(function(set){
+		console.log(self.currentDataObject);
+		
 
-			self.totals.push( d3.sum(set) );
-		});
+		for (var sub = 0; sub < self.currentDataObject[0].length; sub++) {
+			
+			var totalData = [];
+			for (var i = 0; i < self.currentDataObject.length; i++) {
+				
+				totalData.push(self.currentDataObject[i][sub]);
+			}
+			console.log(totalData);
+			self.totals[sub] = d3.sum(totalData);
+		}
+
 
 		self.totals.each(function(total){
 
 		 	self.sizes.push( self.logScale(total) );
 		});
+
 
 		self.sizes.each(function(size){
 
@@ -85,27 +107,65 @@ var ConversionDiagram = new Class({
 		});
 	},
 
+	/**
+	 * [convertRawData description]
+	 * @return {[type]}
+	 */
+	convertRawData: function(){
 
-	createConversionData: function() {
-
-		// basically create a pivot table version of the original.
 		var self = this;
+		self.parsedDataObject = {};
+		self.orderedDates = [];
 
-		self.conversionData = [];
-		self.conversionData.length = self.dataObject[0].length;
+		Object.each(self.rawDataObject, function(data, rawDate){
 
-		for (var i = 0; i < self.dataObject[0].length; i++) {
+			var jsDate = new Date(rawDate);
+			self.orderedDates.push(jsDate);
+			self.parsedDataObject[jsDate] = self.createConversionData(data);
+		});
 
-			self.conversionData[i] = [];
-			self.conversionData[i].length = self.dataObject.length;
+		self.orderedDates.sort(function(a,b){
 
-			for (var range = 0; range < self.dataObject.length; range++){
-
-				self.conversionData[i][range] = self.dataObject[range][i];
-			}
-		};
+			return a > b;
+		});
 	},
 
+	/**
+	 * [createConversionData description]
+	 * @return {[type]}
+	 */
+	createConversionData: function(conversionDataSet) {
+
+		// basically create a pivot table version of the original.
+		conversionData = [];
+		conversionData.length = conversionDataSet[0].length;
+
+		for (var i = 0; i < conversionDataSet[0].length; i++) {
+
+			conversionData[i] = [];
+			conversionData[i].length = conversionDataSet.length;
+
+			for (var range = 0; range < conversionDataSet.length; range++){
+
+				conversionData[i][range] = conversionDataSet[range][i];
+			}
+		};
+
+		return conversionData;
+	},
+
+	/**
+	 * 
+	 * [attachBlockAttrs description]
+	 * @param  {[type]} d3Element
+	 * @param  {[type]} classes
+	 * @param  {[type]} xOffset
+	 * @param  {[type]} width
+	 * @param  {[type]} value
+	 * @param  {[type]} verticalOffset
+	 * @param  {[type]} scalingMethod
+	 * @return {[type]}
+	 */
 	attachBlockAttrs:function(d3Element, classes, xOffset, width, value, verticalOffset, scalingMethod){
 
 		var self = this;
@@ -140,16 +200,53 @@ var ConversionDiagram = new Class({
 		return d3Element;
 	},
 
+	/**
+	 * [getLargestAmount description]
+	 * @param  {[type]} dataObject
+	 * @return {[type]}
+	 */
+	getLargestAmount: function (dataObject) {
+		
+		return d3.sum(dataObject.map(function(item){
+
+			return item[0];
+		}));
+	},
+
+	/**
+	 * [renderDiagram description]
+	 * @return {[type]}
+	 */
 	renderDiagram: function(){
 
 		var self = this;
 
-		var attachedData = self.diagramContainer.selectAll('.DatumGroup').data(self.conversionData);
-		self.enterData(attachedData);
+		var largestAmount = self.getLargestAmount(self.currentDataObject);
+
+		self.logScale = function(x){
+			
+			if (x == 0)return x;
+			else return self.diagramAreaHeight * ((Math.log(x)/Math.log(5)) / (Math.log( largestAmount )/Math.log(5)) );
+		};
+
+
+		self.setTotals(self.currentDataObject);
+		self.setLinearScales();
+
+
+		var attachedData = self.diagramContainer.selectAll('.DatumGroup').data(self.currentDataObject);
+		self.enterComponents(attachedData);
+
+		//self.updateComponents(attachedData);
+		//self.removeComponents(attachedData);
 	},
 
-
-	enterData: function(attachedData){
+	/**
+	 * [enterComponents description]
+	 * @param  {[type]} attachedData
+	 * @return {[type]}
+	 */
+	enterComponents: function(attachedData){
 
 		var self = this;
 
@@ -182,83 +279,17 @@ var ConversionDiagram = new Class({
 					var conversionPath = dataGroup.append('path');
 					conversionPath.attr('class','ConversionPath');
 					conversionPath.attr('d', self.createConversionPath(rectArray[index], rectArray[index + 1]));
-
-				}
-					
+				}	
 			});
-
-
-			
 		}); 
 	},
 
-
-	dfgdgdg: function() {
-
-
-		var impression = 	self.attachBlockAttrs(dataGroup.append('rect'),
-																	'Count',
-																	102,
-																	80,
-																	datum.impression,
-																	self.recordedEventsTotals.impressions.offset,
-																	self.impressionsScale);
-
-
-						var ImpToViews = dataGroup.append('path');
-						ImpToViews.attr('class','ConversionPath');
-						ImpToViews.attr('d', self.createConversionPath(impression,view));
-
-						if(impression.attr('height').toInt() >13){
-
-							dataGroup.append('text')
-							.attr('class','Label ImpToViews')
-							.attr('x', 200)
-							.attr('y', self.recordedEventsTotals.impressions.offset + impression.attr('height').toInt() * 0.5 + 3)
-							.text(self.formatAsOnePointDecimal(datum.ImpToViews) + '%');	
-						}
-						else{
-							ImpToViews.append('title')
-							.text(self.formatAsOnePointDecimal(datum.ImpToViews) + '%');
-						}
-						
-						var ViewsToInterest = dataGroup.append('path');
-						ViewsToInterest.attr('class','ConversionPath');
-						ViewsToInterest.attr('d', self.createConversionPath(view,interest));
-						
-						if(view.attr('height').toInt() >13){
-						dataGroup.append('text')
-							.attr('class','Label ViewsToInterest')
-							.attr('x', 400)
-							.attr('y', self.recordedEventsTotals.views.offset + view.attr('height').toInt() * 0.5 + 3)
-							.text(self.formatAsOnePointDecimal(datum.ViewsToInterest) + '%'); 
-						}
-						else{
-							ViewsToInterest.append('title')
-							.text(self.formatAsOnePointDecimal(datum.ViewsToInterest) + '%');
-						}
-
-						dataGroup.append('text')
-							.attr('class','Label Month')
-							.attr('x', 2)
-							.attr('y', self.recordedEventsTotals.impressions.offset + view.attr('height').toInt() * 0.5 + 3)
-							.text(function(datum){
-
-								var arrayOfResults = self.months.filter(function(item){
-
-									return datum.reportId == item.reportId.toInt();
-								});
-								if(arrayOfResults.length){
-									return arrayOfResults[0].month;
-								}
-								else return "";
-							}); 
-
-
-						self.recordedEventsTotals.impressions.offset += self.impressionsScale(datum.impression);
-
-	},
-
+	/**
+	 * [createConversionPath description]
+	 * @param  {[type]} startBlock
+	 * @param  {[type]} endBlock
+	 * @return {[type]}
+	 */
 	createConversionPath: function(startBlock, endBlock){
 
 		var curveInclineTop = 0.5;
@@ -290,19 +321,26 @@ var ConversionDiagram = new Class({
 
 		return topLine.flatten().join(" ") + bottomLine.flatten().join(" ");
 
+	},
+
+	setLinearScales: function () {
+
+		var self = this;
+
+		for (var i = 0; i < self.totals.length; i++) {
+
+			self.linearScales[i] = d3.scale.linear().domain([0, self.totals[i] ]).range([0, self.sizes[i] ]);
+		};
 	}
 });
 		
-
-
-var ConversionData = [
-	[202, 300, 300, 234, 456, 356, 1003],
-	[30, 29, 28, 56, 43, 12, 123],
-	[8, 6, 3, 5, 9, 4, 3]
-];
-
-
 $(document).addEvent('domready', function(){
 
-	exampleConversionDiagram = new ConversionDiagram(ConversionData, '#conversionDiagramWrapper');
+	d3.json(BASE_URI + "uploads/conversionDiagram/conversionData.json", function(error, json) {
+	
+		if (error) return console.warn(error);
+		console.log(json);
+
+		console.log( new ConversionDiagram(json, '#conversionDiagramWrapper') );	
+	});
 });
