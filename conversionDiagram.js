@@ -284,6 +284,38 @@ var ConversionDiagram = new Class({
 		}); 
 	},
 
+	updateComponents: function (attachedData){
+
+		var attachedData.transition().each(function(datum,index){
+			
+			var dataGroup = d3.select(this);
+			var rectArray = [];
+			datum.each(function(subDatum, subIndex){
+
+				rectArray.push(self.attachBlockAttrs(
+					dataGroup.append('rect'),
+					'Count',
+					(70 + 90) * (subIndex + 1),
+					70,
+					subDatum,
+					self.offsets[subIndex],
+					self.linearScales[subIndex]
+				));
+
+				self.offsets[subIndex] += self.linearScales[subIndex](subDatum);
+			});
+
+			rectArray.each(function(rect, index){
+
+				if( (index < rectArray.length - 1) ){
+
+					var conversionPath = dataGroup.selectAll('.ConversionPath');
+					conversionPath.attr('d', self.createConversionPath(rectArray[index], rectArray[index + 1]));
+				}	
+			});
+		}); 	
+
+	}
 	/**
 	 * [createConversionPath description]
 	 * @param  {[type]} startBlock
