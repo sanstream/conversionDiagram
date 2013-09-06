@@ -286,7 +286,7 @@ var ConversionDiagram = new Class({
 
 	updateComponents: function (attachedData){
 
-		var attachedData.transition().each(function(datum,index){
+		attachedData.transition().each(function(datum,index){
 			
 			var dataGroup = d3.select(this);
 			var rectArray = [];
@@ -315,7 +315,8 @@ var ConversionDiagram = new Class({
 			});
 		}); 	
 
-	}
+	},
+
 	/**
 	 * [createConversionPath description]
 	 * @param  {[type]} startBlock
@@ -368,7 +369,11 @@ var ConversionDiagram = new Class({
 		
 $(document).addEvent('domready', function(){
 
-	d3.json(BASE_URI + "uploads/conversionDiagram/conversionData.json", function(error, json) {
+	var dataLocation = '';
+	if (typeof BASE_URI == 'undefined') dataLocation = "http://localhost/~conversionDiagram/";
+	else dataLocation = BASE_URI + 'uploads/conversionDiagram/';
+	
+	d3.json( dataLocation + "conversionData.json", function(error, json) {
 	
 		if (error) return console.warn(error);
 		console.log(json);

@@ -1,41 +1,46 @@
-svg text{
+#conversionDiagramWrapper{
+	margin: 1em;
+}
+
+
+#conversionDiagramWrapper svg text{
 	fill: #555;
     stroke: none;
     stroke-width: 0;
 }
 
-svg .diagramContainer{
+#conversionDiagramWrapper svg .diagramContainer{
 	fill: none;
 	stroke: none;
 }
 
-svg g.DatumGroup rect.Count:first-of-type{ 
+#conversionDiagramWrapper svg g.DatumGroup rect.Count:first-of-type{ 
 	fill: rgba(0,153,224,0.1);
 	stroke: rgba(0,153,224,1);
 }
 
 
-svg g.DatumGroup rect.Count:nth-of-type(2){
+#conversionDiagramWrapper svg g.DatumGroup rect.Count:nth-of-type(2){
 	fill: rgba(0,153,224,0.4);
 	stroke: rgba(0,153,224,1);
 }
 
-svg g.DatumGroup rect.Count:nth-of-type(3){
+#conversionDiagramWrapper svg g.DatumGroup rect.Count:nth-of-type(3){
 	fill: rgba(0,153,224,0.7);
 	stroke: rgba(0,153,224,1);
 }
 
-svg g.DatumGroup path.ConversionPath{
+#conversionDiagramWrapper svg g.DatumGroup path.ConversionPath{
 	stroke: rgba(0,153,224,1);
 	stroke-width: 1px;
 }
 
-svg g.DatumGroup path.ConversionPath:nth-of-type(1){
+#conversionDiagramWrapper svg g.DatumGroup path.ConversionPath:nth-of-type(1){
 	fill: rgba(0,153,224,0.25);
 
 }
 
 
-svg g.DatumGroup path.ConversionPath:nth-of-type(2){
+#conversionDiagramWrapper svg g.DatumGroup path.ConversionPath:nth-of-type(2){
 	fill: rgba(0,153,224,0.55);
 }
