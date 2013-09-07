@@ -20,6 +20,9 @@ var ConversionDiagram = new Class({
 	logScale: null,
 	totals: null, // holds an array with all the totals
 
+	monthsListWidth: 100,
+
+	diagramWidth: 700,
 	diagramContainer: null,
 	diagramAreaHeight: null,
 	firstItemShown: 0,
@@ -39,22 +42,25 @@ var ConversionDiagram = new Class({
 
 			// set up the visual prerequisites:
 			var svgElement = d3.select(containerIdentifier).append('svg');
-			var diagramWidth = 700;
-			svgElement.attr('width', diagramWidth);
-			self.diagramAreaHeight = diagramWidth * 0.70;
+
+			svgElement.attr('width', self.monthsListWidth + self.diagramWidth);
+			self.diagramAreaHeight = self.diagramWidth * 0.70;
 			svgElement.attr('height', self.diagramAreaHeight);
 
+			self.monthListContainer = svgElement.append('g').attr('class','monthListContainer');
 			self.diagramContainer = svgElement.append('g').attr('class','diagramContainer');
+			self.scopeLine = svgElement.append('path')
+				.classed('ScopeLine',true)
+				.attr('d',self.setScopeLineDims.bind(this));
+
 			self.linearScales = new Array();
 			
 
 			self.rawDataObject = dataObject;
 			// Do the neccesary calculations and data-treatment:
 			self.convertRawData();
-			self.firstItemShown = self.orderedDates[0];
-			self.currentDataObject = self.parsedDataObject[self.firstItemShown];
-
-			// set up the scaling methods:
+			self.setTimeFrameShown(0);
+			self.renderMonthsList();
 			//visual rendering: 
 			self.renderDiagram();
 		}
@@ -69,6 +75,59 @@ var ConversionDiagram = new Class({
 		return true;		
 	},
 
+	setScopeLineDims: function(datum) {
+
+		var xOffset = 200;
+		var points = {
+			'a':{
+				'x': xOffset + 30,
+				'y': 2
+			},
+			'b':{
+				'x': xOffset + 20,
+				'y': 2
+			},
+			'c':{
+				'x': xOffset,
+				'y': 2 + 20
+			},
+			'd':{
+				'x': xOffset,
+				'y': this.diagramAreaHeight - 15
+			},
+			'e':{
+				'x': xOffset + 20,
+				'y': this.diagramAreaHeight
+			},
+			'f':{
+				'x': xOffset + 30,
+				'y': this.diagramAreaHeight
+			}
+		}
+
+		var line = [ 
+			[" M" + points.a.x + "," + points.a.y ], 
+			[' L' + points.b.x + "," + points.b.y ], 
+			[' C' + points.c.x +',' + points.b.y ],
+			 	  
+				  [ points.c.x + "," + points.c.y ], 
+				  [ points.c.x + "," + points.c.y ], 
+				  
+
+			[' L' + points.d.x + "," + points.d.y ], 
+			[' C' + points.d.x +',' + points.d.y ],
+			 	  
+				  [ points.d.x + "," + points.e.y ], 
+				  [ points.e.x + "," + points.e.y ], 
+				  
+ 
+			[' L' + points.f.x + "," + points.f.y ],
+		];
+
+
+		return line.flatten().join(" ");
+	},
+
 	/**
 	 * [setTotals description]
 	 */
@@ -80,9 +139,6 @@ var ConversionDiagram = new Class({
 		self.sizes = [];
 		self.offsets = [];
 
-		console.log(self.currentDataObject);
-		
-
 		for (var sub = 0; sub < self.currentDataObject[0].length; sub++) {
 			
 			var totalData = [];
@@ -90,7 +146,6 @@ var ConversionDiagram = new Class({
 				
 				totalData.push(self.currentDataObject[i][sub]);
 			}
-			console.log(totalData);
 			self.totals[sub] = d3.sum(totalData);
 		}
 
@@ -120,13 +175,16 @@ var ConversionDiagram = new Class({
 		Object.each(self.rawDataObject, function(data, rawDate){
 
 			var jsDate = new Date(rawDate);
-			self.orderedDates.push(jsDate);
+			self.orderedDates.push({
+				'date':jsDate,
+				'selected': false
+			});
 			self.parsedDataObject[jsDate] = self.createConversionData(data);
 		});
 
 		self.orderedDates.sort(function(a,b){
 
-			return a > b;
+			return a.date > b.date;
 		});
 	},
 
@@ -199,7 +257,41 @@ var ConversionDiagram = new Class({
 		
 		return d3Element;
 	},
+	
+	updateBlockAttrs:function(d3Element, classes, xOffset, width, value, verticalOffset, scalingMethod){
 
+		var self = this;
+
+		var scaledValue = scalingMethod(value);
+
+		d3Element.attr('class', function() {
+			if (scaledValue > 13) 
+				return  classes + ' ValueHidden'
+		});
+		d3Element.attr('height',scaledValue);
+		d3Element.attr('y', verticalOffset);
+		d3Element.attr('x', xOffset);
+		d3Element.attr('width', width);
+
+		if(d3Element.node().nodeName != 'g'){
+
+			 if(scaledValue > 15){
+			
+				d3.select(d3Element.node().getParent()).select('text')
+					.attr('x', xOffset + 60)
+					.attr('y', verticalOffset + scaledValue.toInt() * 0.5 + 3)
+					.attr('text-anchor','end')
+					.text(value);
+			}
+			else{
+				d3Element.select('title')
+					.text(value); 	
+			}
+			
+		}
+		
+		return d3Element;
+	},
 	/**
 	 * [getLargestAmount description]
 	 * @param  {[type]} dataObject
@@ -235,6 +327,9 @@ var ConversionDiagram = new Class({
 
 
 		var attachedData = self.diagramContainer.selectAll('.DatumGroup').data(self.currentDataObject);
+
+		//console.log(attachedData.enter(), attachedData.transition(), attachedData.exit());
+
 		self.enterComponents(attachedData);
 
 		//self.updateComponents(attachedData);
@@ -262,7 +357,7 @@ var ConversionDiagram = new Class({
 				rectArray.push(self.attachBlockAttrs(
 					dataGroup.append('rect'),
 					'Count',
-					(70 + 90) * (subIndex + 1),
+					160 * (subIndex + 1) + self.monthsListWidth,
 					70,
 					subDatum,
 					self.offsets[subIndex],
@@ -286,33 +381,40 @@ var ConversionDiagram = new Class({
 
 	updateComponents: function (attachedData){
 
+		console.log(attachedData, attachedData.transition());
+
+		var self = this;
 		attachedData.transition().each(function(datum,index){
-			
-			var dataGroup = d3.select(this);
-			var rectArray = [];
-			datum.each(function(subDatum, subIndex){
+			console.log(datum);
 
-				rectArray.push(self.attachBlockAttrs(
-					dataGroup.append('rect'),
-					'Count',
-					(70 + 90) * (subIndex + 1),
-					70,
-					subDatum,
-					self.offsets[subIndex],
-					self.linearScales[subIndex]
-				));
+			if(datum){
 
-				self.offsets[subIndex] += self.linearScales[subIndex](subDatum);
-			});
+				var dataGroup = d3.select(this);
+				var rectArray = [];
+				datum.each(function(subDatum, subIndex){
 
-			rectArray.each(function(rect, index){
+					rectArray.push(self.updateBlockAttrs(
+						dataGroup.select('rect.Count:nth-of-type('+ (subIndex + 1) +')'),
+						'Count',
+						(70 + 90) * (subIndex + 1),
+						70,
+						subDatum,
+						self.offsets[subIndex],
+						self.linearScales[subIndex]
+					));
 
-				if( (index < rectArray.length - 1) ){
+					self.offsets[subIndex] += self.linearScales[subIndex](subDatum);
+				});
 
-					var conversionPath = dataGroup.selectAll('.ConversionPath');
-					conversionPath.attr('d', self.createConversionPath(rectArray[index], rectArray[index + 1]));
-				}	
-			});
+				rectArray.each(function(rect, index){
+
+					if( (index < rectArray.length - 1) ){
+
+						var conversionPath = dataGroup.selectAll('.ConversionPath');
+						conversionPath.attr('d', self.createConversionPath(rectArray[index], rectArray[index + 1]));
+					}	
+				});
+			}
 		}); 	
 
 	},
@@ -364,6 +466,83 @@ var ConversionDiagram = new Class({
 
 			self.linearScales[i] = d3.scale.linear().domain([0, self.totals[i] ]).range([0, self.sizes[i] ]);
 		};
+	},
+
+	setTimeFrameShown: function (index) {
+
+		var self = this;
+		// resetting the selected states of each date:
+		self.orderedDates.each(function(object){
+			object.selected = false;
+		});
+		// setting the current selected date to true
+		self.orderedDates[index].selected = true;
+
+		var date = self.orderedDates[index].date;
+		self.currentDataObject = self.parsedDataObject[date];
+	},
+
+	renderMonthsList: function() {
+
+		var self = this;
+
+		var formatDate = d3.time.format('%B %Y');
+
+		var attachedDates = self.monthListContainer.selectAll('.DateGroup').data(self.orderedDates);
+
+		var dateGroups = attachedDates.enter().append('g').classed('DateGroup', true);
+
+		boxWidth = 120;
+		boxXOffset = 21;
+
+		dateGroups.append('rect')
+			.classed('DateBox',true)
+			.attr('width',boxWidth)
+			.attr('height',30)
+			.classed('Selected', function(datum){
+				return datum.selected;
+			})
+			.attr('x', 21)
+			.attr('y', function(datum, index){
+
+				return 50 * index + 30;
+			});
+
+		dateGroups.append('path')
+			.classed('DateAnchorLine',true)
+			.classed('Selected', function(datum){
+				return datum.selected;
+			})
+
+			.attr('d', function(datum, index){
+				return 	'M '+ (boxWidth + boxXOffset) + ',' + (50 * index + 30 + 15 ) +
+						' L' + (boxWidth + boxXOffset + ((datum.selected)? 59 : 15) ) +',' + (50 * index + 30 + 15);
+			})
+			.attr('stroke','#000');
+
+		dateGroups.append('circle')
+			.classed('DateAnchorDot',true)
+			.attr('cx', function(datum){
+				return boxWidth + boxXOffset + ((datum.selected)? 59 : 15);
+			})
+			.attr('cy', function(datum, index){
+				return 50 * index + 30 + 15;
+			})
+			.attr('r',function(datum){
+				return (datum.selected)? 5 : 2; 
+			});	
+
+		dateGroups.append('text')
+			.attr('x', 21 + 10)
+			.attr('y', function(datum, index){
+
+				return 50 * index + 30 + 20;
+			})			
+			.text(function(datum){
+			return formatDate(datum.date);
+		});
+
+
 	}
 });
 		
@@ -372,12 +551,11 @@ $(document).addEvent('domready', function(){
 	var dataLocation = '';
 	if (typeof BASE_URI == 'undefined') dataLocation = "http://localhost/~conversionDiagram/";
 	else dataLocation = BASE_URI + 'uploads/conversionDiagram/';
-	
-	d3.json( dataLocation + "conversionData.json", function(error, json) {
+
+	d3.json( dataLocation + "conversionData.json", function(json, error) {
 	
 		if (error) return console.warn(error);
-		console.log(json);
-
-		console.log( new ConversionDiagram(json, '#conversionDiagramWrapper') );	
+		
+		conversion = new ConversionDiagram(json, '#conversionDiagramWrapper');	
 	});
 });
