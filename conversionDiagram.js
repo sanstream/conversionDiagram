@@ -20,6 +20,8 @@ var ConversionDiagram = new Class({
 	logScale: null,
 	totals: null, // holds an array with all the totals
 
+	svgElement: null,
+	svgMargin: 14,
 	monthsListWidth: 100,
 
 	diagramWidth: 700,
@@ -41,17 +43,19 @@ var ConversionDiagram = new Class({
 		if(self.suppliedDataIsOk()){
 
 			// set up the visual prerequisites:
-			var svgElement = d3.select(containerIdentifier).append('svg');
+			self.svgElement = d3.select(containerIdentifier).append('svg');
 
-			svgElement.attr('width', self.monthsListWidth + self.diagramWidth);
+			self.svgElement.attr('width', self.monthsListWidth + self.diagramWidth + self.svgMargin*2);
 			self.diagramAreaHeight = self.diagramWidth * 0.70;
-			svgElement.attr('height', self.diagramAreaHeight);
+			self.svgElement.attr('height', self.diagramAreaHeight + self.svgMargin*2);
 
-			self.monthListContainer = svgElement.append('g').attr('class','monthListContainer');
-			self.diagramContainer = svgElement.append('g').attr('class','diagramContainer');
-			self.scopeLine = svgElement.append('path')
+			self.monthListContainer = self.svgElement.append('g').attr('class','monthListContainer');
+			self.diagramContainer = self.svgElement.append('g').attr('class','diagramContainer');
+			self.scopeLine = self.svgElement.append('path')
 				.classed('ScopeLine',true)
 				.attr('d',self.setScopeLineDims.bind(this));
+
+			self.addColumnLabels();
 
 			self.linearScales = new Array();
 			
@@ -128,6 +132,22 @@ var ConversionDiagram = new Class({
 		return line.flatten().join(" ");
 	},
 
+	addColumnLabels:function () {
+		
+		var self = this;
+		var columnLabelGroup = self.svgElement.append('g').classed('ColumnLabelGroup',true);
+
+		['Shown...', 'seen...', 'and bought.'].each(function(labelName, index){
+
+			columnLabelGroup.append('text')
+				.classed('ColumnLabel',true)
+				.attr('x', 260 + index * 160)
+				.attr('y',10)
+				.attr('width', 100)
+				.text(labelName);
+		});
+	},
+
 	/**
 	 * [setTotals description]
 	 */
@@ -158,7 +178,7 @@ var ConversionDiagram = new Class({
 
 		self.sizes.each(function(size){
 
-			self.offsets.push( (self.diagramAreaHeight - size) * 0.50 );
+			self.offsets.push( (self.diagramAreaHeight - self.svgMargin - size) * 0.50 );
 		});
 	},
 
@@ -318,7 +338,7 @@ var ConversionDiagram = new Class({
 		self.logScale = function(x){
 			
 			if (x == 0)return x;
-			else return self.diagramAreaHeight * ((Math.log(x)/Math.log(5)) / (Math.log( largestAmount )/Math.log(5)) );
+			else return (self.diagramAreaHeight -(self.svgMargin * 2)) * ((Math.log(x)/Math.log(5)) / (Math.log( largestAmount )/Math.log(5)) );
 		};
 
 
@@ -360,7 +380,7 @@ var ConversionDiagram = new Class({
 					160 * (subIndex + 1) + self.monthsListWidth,
 					70,
 					subDatum,
-					self.offsets[subIndex],
+					self.offsets[subIndex] + self.svgMargin,
 					self.linearScales[subIndex]
 				));
 
