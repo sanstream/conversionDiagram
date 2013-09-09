@@ -30,10 +30,10 @@ var ConversionDiagram = new Class({
 	firstItemShown: 0,
 
 	/**
-	 * [initialize description]
-	 * @param  {[type]} dataObject
-	 * @param  {[type]} containerIdentifier
-	 * @return {[type]}
+	 * Constructor
+	 * @param  {object} dataObject 				parsed raw json.
+	 * @param  {string} containerIdentifier		css selector for a specific element.
+	 * @return {void}
 	 */
 	initialize: function(dataObject, containerIdentifier,firstItemShown){
 
@@ -71,17 +71,22 @@ var ConversionDiagram = new Class({
 	},
 
 	/**
-	 * [suppliedDataIsOk description]
-	 * @return {[type]}
+	 * Check to figure out if the data is workable, still a stub.
+	 * @return {boolean}
 	 */
 	suppliedDataIsOk: function () {
 	
 		return true;		
 	},
 
+	/**
+	 * Draws the line values for the 'd' attribute of  a svg path.
+	 * @param {object} datum 	The d3 datum object of the path.
+	 */
 	setScopeLineDims: function(datum) {
 
 		var xOffset = 200;
+		// Preseting the coordinates of the scope-line:
 		var points = {
 			'a':{
 				'x': xOffset + 30,
@@ -109,6 +114,7 @@ var ConversionDiagram = new Class({
 			}
 		}
 
+		// applying them:
 		var line = [ 
 			[" M" + points.a.x + "," + points.a.y ], 
 			[' L' + points.b.x + "," + points.b.y ], 
@@ -132,6 +138,9 @@ var ConversionDiagram = new Class({
 		return line.flatten().join(" ");
 	},
 
+	/**
+	 * Adds the Column labels, yup it totally does.
+	 */
 	addColumnLabels:function () {
 		
 		var self = this;
@@ -149,7 +158,7 @@ var ConversionDiagram = new Class({
 	},
 
 	/**
-	 * [setTotals description]
+	 * sets the total of the ammounts, sizes, and y-offsets of all the data-types. Aw yiss..
 	 */
 	setTotals: function () {
 
@@ -183,8 +192,8 @@ var ConversionDiagram = new Class({
 	},
 
 	/**
-	 * [convertRawData description]
-	 * @return {[type]}
+	 * Converts the raw data to a format the we can work with.
+	 * @return {void}
 	 */
 	convertRawData: function(){
 
@@ -209,12 +218,11 @@ var ConversionDiagram = new Class({
 	},
 
 	/**
-	 * [createConversionData description]
-	 * @return {[type]}
+	 * Basically create a pivot table version of the original.
+	 * @return {array}
 	 */
 	createConversionData: function(conversionDataSet) {
 
-		// basically create a pivot table version of the original.
 		conversionData = [];
 		conversionData.length = conversionDataSet[0].length;
 
@@ -233,16 +241,15 @@ var ConversionDiagram = new Class({
 	},
 
 	/**
-	 * 
-	 * [attachBlockAttrs description]
-	 * @param  {[type]} d3Element
-	 * @param  {[type]} classes
-	 * @param  {[type]} xOffset
-	 * @param  {[type]} width
-	 * @param  {[type]} value
-	 * @param  {[type]} verticalOffset
-	 * @param  {[type]} scalingMethod
-	 * @return {[type]}
+	 * attaches the attribute values.
+	 * @param  {object} d3Element
+	 * @param  {string} classes
+	 * @param  {integer} xOffset
+	 * @param  {integer} width
+	 * @param  {integer} value
+	 * @param  {integer} verticalOffset
+	 * @param  {function} scalingMethod
+	 * @return {void}
 	 */
 	attachBlockAttrs:function(d3Element, classes, xOffset, width, value, verticalOffset, scalingMethod){
 
@@ -278,6 +285,17 @@ var ConversionDiagram = new Class({
 		return d3Element;
 	},
 	
+	/**
+	 * attaches the attribute values.
+	 * @param  {object} d3Element
+	 * @param  {string} classes
+	 * @param  {integer} xOffset
+	 * @param  {integer} width
+	 * @param  {integer} value
+	 * @param  {integer} verticalOffset
+	 * @param  {function} scalingMethod
+	 * @return {void}
+	 */
 	updateBlockAttrs:function(d3Element, classes, xOffset, width, value, verticalOffset, scalingMethod){
 
 		var self = this;
@@ -313,9 +331,9 @@ var ConversionDiagram = new Class({
 		return d3Element;
 	},
 	/**
-	 * [getLargestAmount description]
-	 * @param  {[type]} dataObject
-	 * @return {[type]}
+	 * Returns the sum of the subset with the highest sum.
+	 * @param  {array} dataObject
+	 * @return {integer}
 	 */
 	getLargestAmount: function (dataObject) {
 		
@@ -326,8 +344,8 @@ var ConversionDiagram = new Class({
 	},
 
 	/**
-	 * [renderDiagram description]
-	 * @return {[type]}
+	 * Hub method for all the rendering of the diagram.
+	 * @return {void}
 	 */
 	renderDiagram: function(){
 
@@ -348,8 +366,6 @@ var ConversionDiagram = new Class({
 
 		var attachedData = self.diagramContainer.selectAll('.DatumGroup').data(self.currentDataObject);
 
-		//console.log(attachedData.enter(), attachedData.transition(), attachedData.exit());
-
 		self.enterComponents(attachedData);
 
 		//self.updateComponents(attachedData);
@@ -357,9 +373,9 @@ var ConversionDiagram = new Class({
 	},
 
 	/**
-	 * [enterComponents description]
-	 * @param  {[type]} attachedData
-	 * @return {[type]}
+	 * Method for entering the new elements based on the data.
+	 * @param  {array} attachedData
+	 * @return {void}
 	 */
 	enterComponents: function(attachedData){
 
@@ -399,6 +415,11 @@ var ConversionDiagram = new Class({
 		}); 
 	},
 
+	/**
+	 * Method for updating existing elements based on the data.
+	 * @param  {array} attachedData
+	 * @return {void}
+	 */
 	updateComponents: function (attachedData){
 
 		console.log(attachedData, attachedData.transition());
@@ -440,10 +461,10 @@ var ConversionDiagram = new Class({
 	},
 
 	/**
-	 * [createConversionPath description]
-	 * @param  {[type]} startBlock
-	 * @param  {[type]} endBlock
-	 * @return {[type]}
+	 * Builds the bezier path for the conversionspath.
+	 * @param  {d3 element} startBlock
+	 * @param  {d3 element} endBlock
+	 * @return {string}
 	 */
 	createConversionPath: function(startBlock, endBlock){
 
@@ -478,6 +499,9 @@ var ConversionDiagram = new Class({
 
 	},
 
+	/**
+	 * Sets the linear scales of each dataset.
+	 */
 	setLinearScales: function () {
 
 		var self = this;
@@ -488,6 +512,10 @@ var ConversionDiagram = new Class({
 		};
 	},
 
+	/**
+	 * Sets the date in orderedDates to selected and set the appriopiate currentDataObject.
+	 * @param {integer} index Index of the date selected.
+	 */
 	setTimeFrameShown: function (index) {
 
 		var self = this;
@@ -502,6 +530,10 @@ var ConversionDiagram = new Class({
 		self.currentDataObject = self.parsedDataObject[date];
 	},
 
+	/**
+	 * Builds the monthlist.
+	 * @return {void}
+	 */
 	renderMonthsList: function() {
 
 		var self = this;
@@ -561,17 +593,17 @@ var ConversionDiagram = new Class({
 			.text(function(datum){
 			return formatDate(datum.date);
 		});
-
-
 	}
 });
-		
+
+// Adding the visualisation to the dom, when the dom is ready.
 $(document).addEvent('domready', function(){
 
 	var dataLocation = '';
 	if (typeof BASE_URI == 'undefined') dataLocation = "http://localhost/~conversionDiagram/";
 	else dataLocation = BASE_URI + 'uploads/conversionDiagram/';
 
+	// Load the data from the json file:
 	d3.json( dataLocation + "conversionData.json", function(json, error) {
 	
 		if (error) return console.warn(error);
