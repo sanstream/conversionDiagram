@@ -251,7 +251,7 @@ var ConversionDiagram = new Class({
 	 * @param  {function} scalingMethod
 	 * @return {void}
 	 */
-	attachBlockAttrs:function(d3Element, classes, xOffset, width, value, verticalOffset, scalingMethod){
+	attachBlockAttrs:function(d3Element, classes, xOffset, width, value, dataType, verticalOffset, scalingMethod){
 
 		var self = this;
 
@@ -262,6 +262,7 @@ var ConversionDiagram = new Class({
 		d3Element.attr('y', verticalOffset);
 		d3Element.attr('x', xOffset);
 		d3Element.attr('width', width);
+		d3Element.attr('data-type', dataType);
 
 		if(d3Element.node().nodeName != 'g'){
 
@@ -271,15 +272,16 @@ var ConversionDiagram = new Class({
 					.attr('class','Label ' + classes)
 					.attr('x', xOffset + 60)
 					.attr('y', verticalOffset + scaledValue.toInt() * 0.5 + 3)
+					.attr('data-fortype', dataType)
 					.attr('text-anchor','end')
 					.text(value)
 			}
 			else{
 
 				d3Element.append('title')
+					.attr('data-fortype', dataType)
 					.text(value); 	
 			}
-			
 		}
 		
 		return d3Element;
@@ -296,36 +298,50 @@ var ConversionDiagram = new Class({
 	 * @param  {function} scalingMethod
 	 * @return {void}
 	 */
-	updateBlockAttrs:function(d3Element, classes, xOffset, width, value, verticalOffset, scalingMethod){
+	updateBlockAttrs:function(d3Element, value, verticalOffset, scalingMethod){
 
 		var self = this;
 
 		var scaledValue = scalingMethod(value);
 
-		d3Element.attr('class', function() {
-			if (scaledValue > 13) 
-				return  classes + ' ValueHidden'
-		});
 		d3Element.attr('height',scaledValue);
 		d3Element.attr('y', verticalOffset);
-		d3Element.attr('x', xOffset);
-		d3Element.attr('width', width);
 
+		// update the text labeling
 		if(d3Element.node().nodeName != 'g'){
 
-			 if(scaledValue > 15){
-			
-				d3.select(d3Element.node().getParent()).select('text')
-					.attr('x', xOffset + 60)
-					.attr('y', verticalOffset + scaledValue.toInt() * 0.5 + 3)
-					.attr('text-anchor','end')
+			var dataType = d3Element.attr('data-type');
+			var label = d3.select(d3Element.node().parentNode).selectAll('[data-fortype="'+ dataType +'"]');
+
+			if(scaledValue > 15){
+				
+				if ( label.node().tagName === 'title' ){
+					// get rid of the title tag and append a text tag.
+					label.remove();
+
+					label = d3.select(d3Element.node().parentNode).append('text');
+					label.attr('class','Label ' + d3Element.attr('class'));
+					label.attr('x', d3Element.attr('x').toInt() + 60);
+					label.attr('data-fortype', dataType);
+					label.attr('text-anchor','end');
+				}
+				
+				// just update the text tag further:
+				label.attr('y', verticalOffset + scaledValue.toInt() * 0.5 + 3)
 					.text(value);
 			}
 			else{
-				d3Element.select('title')
-					.text(value); 	
+				
+				if( label.node().tagName === 'text' ){
+					// We need a title tag instead of a text tag, so get rid of the first:
+					label.remove();
+					
+					label = d3Element.append('title')
+						.attr('data-fortype', dataType);
+				}
+				
+				label.text(value);
 			}
-			
 		}
 		
 		return d3Element;
@@ -359,17 +375,14 @@ var ConversionDiagram = new Class({
 			else return (self.diagramAreaHeight -(self.svgMargin * 2)) * ((Math.log(x)/Math.log(5)) / (Math.log( largestAmount )/Math.log(5)) );
 		};
 
-
-		self.setTotals(self.currentDataObject);
+		self.setTotals();
 		self.setLinearScales();
-
 
 		var attachedData = self.diagramContainer.selectAll('.DatumGroup').data(self.currentDataObject);
 
-		self.enterComponents(attachedData);
-
-		//self.updateComponents(attachedData);
+		self.updateComponents(attachedData);
 		//self.removeComponents(attachedData);
+		self.enterComponents(attachedData);
 	},
 
 	/**
@@ -390,15 +403,18 @@ var ConversionDiagram = new Class({
 			var rectArray = [];
 			datum.each(function(subDatum, subIndex){
 
-				rectArray.push(self.attachBlockAttrs(
-					dataGroup.append('rect'),
-					'Count',
-					160 * (subIndex + 1) + self.monthsListWidth,
-					70,
-					subDatum,
-					self.offsets[subIndex] + self.svgMargin,
-					self.linearScales[subIndex]
-				));
+				rectArray.push(
+					self.attachBlockAttrs(
+						dataGroup.append('rect'),
+						'Count',
+						160 * (subIndex + 1) + self.monthsListWidth,
+						70,
+						subDatum,
+						subIndex,
+						self.offsets[subIndex] + self.svgMargin,
+						self.linearScales[subIndex]
+					)
+				);
 
 				self.offsets[subIndex] += self.linearScales[subIndex](subDatum);
 			});
@@ -422,42 +438,33 @@ var ConversionDiagram = new Class({
 	 */
 	updateComponents: function (attachedData){
 
-		console.log(attachedData, attachedData.transition());
-
 		var self = this;
 		attachedData.transition().each(function(datum,index){
-			console.log(datum);
 
 			if(datum){
 
 				var dataGroup = d3.select(this);
 				var rectArray = [];
-				datum.each(function(subDatum, subIndex){
+				dataGroup.selectAll('rect.Count').each(function(rect, subIndex){
 
 					rectArray.push(self.updateBlockAttrs(
-						dataGroup.select('rect.Count:nth-of-type('+ (subIndex + 1) +')'),
-						'Count',
-						(70 + 90) * (subIndex + 1),
-						70,
-						subDatum,
-						self.offsets[subIndex],
+						d3.select(this),
+						datum[subIndex],
+						self.offsets[subIndex] + self.svgMargin,
 						self.linearScales[subIndex]
 					));
 
-					self.offsets[subIndex] += self.linearScales[subIndex](subDatum);
+					self.offsets[subIndex] += self.linearScales[subIndex](datum[subIndex]);
 				});
 
-				rectArray.each(function(rect, index){
 
-					if( (index < rectArray.length - 1) ){
+				dataGroup.selectAll('path.ConversionPath').each(function(path, index){
 
-						var conversionPath = dataGroup.selectAll('.ConversionPath');
-						conversionPath.attr('d', self.createConversionPath(rectArray[index], rectArray[index + 1]));
-					}	
+				 		d3.select(this)
+				 			.attr('d', self.createConversionPath(rectArray[index], rectArray[index + 1]));	
 				});
 			}
-		}); 	
-
+		});
 	},
 
 	/**
@@ -528,6 +535,14 @@ var ConversionDiagram = new Class({
 
 		var date = self.orderedDates[index].date;
 		self.currentDataObject = self.parsedDataObject[date];
+	},
+
+	switchMonth: function (monthNumber) {
+
+		var self = this;
+
+		self.setTimeFrameShown(monthNumber);
+		self.renderDiagram();
 	},
 
 	/**
