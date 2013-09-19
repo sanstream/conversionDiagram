@@ -304,8 +304,8 @@ var ConversionDiagram = new Class({
 
 		var scaledValue = scalingMethod(value);
 
-		d3Element.attr('height',scaledValue);
-		d3Element.attr('y', verticalOffset);
+		d3Element.transition().attr('height',scaledValue);
+		d3Element.transition().attr('y', verticalOffset);
 
 		// update the text labeling
 		if(d3Element.node().nodeName != 'g'){
@@ -327,7 +327,7 @@ var ConversionDiagram = new Class({
 				}
 				
 				// just update the text tag further:
-				label.attr('y', verticalOffset + scaledValue.toInt() * 0.5 + 3)
+				label.transition().attr('y', verticalOffset + scaledValue.toInt() * 0.5 + 3)
 					.text(value);
 			}
 			else{
@@ -460,7 +460,7 @@ var ConversionDiagram = new Class({
 
 				dataGroup.selectAll('path.ConversionPath').each(function(path, index){
 
-				 		d3.select(this)
+				 		d3.select(this).transition()
 				 			.attr('d', self.createConversionPath(rectArray[index], rectArray[index + 1]));	
 				});
 			}
