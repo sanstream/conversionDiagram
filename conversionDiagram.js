@@ -256,6 +256,12 @@ var ConversionDiagram = new Class({
 		var self = this;
 
 		var scaledValue = scalingMethod(value);
+		var blockValues = {
+			'height':scaledValue,
+			'y': verticalOffset,
+			'x': xOffset,
+			'width': width
+		};
 
 		d3Element.attr('class', (scaledValue > 13) ? classes : classes + ' ValueHidden');
 		d3Element.attr('height',scaledValue);
@@ -284,7 +290,7 @@ var ConversionDiagram = new Class({
 			}
 		}
 		
-		return d3Element;
+		return blockValues;
 	},
 	
 	/**
@@ -303,6 +309,13 @@ var ConversionDiagram = new Class({
 		var self = this;
 
 		var scaledValue = scalingMethod(value);
+
+		var blockValues = {
+			'height':scaledValue,
+			'y': verticalOffset,
+			'x': d3Element.attr('x').toInt(),
+			'width': d3Element.attr('width').toInt()
+		};
 
 		d3Element.transition().attr('height',scaledValue);
 		d3Element.transition().attr('y', verticalOffset);
@@ -344,7 +357,7 @@ var ConversionDiagram = new Class({
 			}
 		}
 		
-		return d3Element;
+		return blockValues;
 	},
 	/**
 	 * Returns the sum of the subset with the highest sum.
@@ -478,14 +491,14 @@ var ConversionDiagram = new Class({
 		var curveInclineTop = 0.5;
 		var curveInclineBottom = 0.5;
 
-		var ax = startBlock.attr('width').toFloat() + startBlock.attr('x').toFloat();
-		var ay = startBlock.attr('y').toFloat();
-		var bx = endBlock.attr('x').toFloat();
-		var by = endBlock.attr('y').toFloat();
-		var cx = startBlock.attr('width').toFloat() + startBlock.attr('x').toFloat();
-		var cy = startBlock.attr('y').toFloat() + startBlock.attr('height').toFloat();
-		var dx = endBlock.attr('x').toFloat();
-		var dy = endBlock.attr('y').toFloat() + endBlock.attr('height').toFloat();
+		var ax = startBlock.width + startBlock.x;
+		var ay = startBlock.y;
+		var bx = endBlock.x;
+		var by = endBlock.y;
+		var cx = startBlock.width + startBlock.x;
+		var cy = startBlock.y + startBlock.height;
+		var dx = endBlock.x;
+		var dy = endBlock.y + endBlock.height;
 		
 
 		var topLine = [ [" M" + (ax + 1) + "," + ay], 
