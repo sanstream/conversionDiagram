@@ -366,10 +366,12 @@ var ConversionDiagram = new Class({
 	 */
 	getLargestAmount: function (dataObject) {
 		
-		return d3.sum(dataObject.map(function(item){
+		return d3.sum(
+			dataObject.map(function(item){
 
-			return item[0];
-		}));
+				return item[0];
+			})
+		);
 	},
 
 	/**
@@ -570,7 +572,13 @@ var ConversionDiagram = new Class({
 
 		var attachedDates = self.monthListContainer.selectAll('.DateGroup').data(self.orderedDates);
 
-		var dateGroups = attachedDates.enter().append('g').classed('DateGroup', true);
+		var dateGroups = attachedDates.enter()
+			.append('g')
+			.classed('DateGroup', true)
+			.on('click',function(datum,index){
+				console.log(this);
+				self.switchMonth(index);
+			});
 
 		boxWidth = 120;
 		boxXOffset = 21;
@@ -587,6 +595,7 @@ var ConversionDiagram = new Class({
 
 				return 50 * index + 30;
 			});
+
 
 		dateGroups.append('path')
 			.classed('DateAnchorLine',true)
