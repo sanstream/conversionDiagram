@@ -557,6 +557,7 @@ var ConversionDiagram = new Class({
 		var self = this;
 
 		self.setTimeFrameShown(monthNumber);
+		self.updateMonthList();
 		self.renderDiagram();
 	},
 
@@ -602,12 +603,12 @@ var ConversionDiagram = new Class({
 			.classed('Selected', function(datum){
 				return datum.selected;
 			})
-
 			.attr('d', function(datum, index){
 				return 	'M '+ (boxWidth + boxXOffset) + ',' + (50 * index + 30 + 15 ) +
 						' L' + (boxWidth + boxXOffset + ((datum.selected)? 59 : 15) ) +',' + (50 * index + 30 + 15);
 			})
 			.attr('stroke','#000');
+
 
 		dateGroups.append('circle')
 			.classed('DateAnchorDot',true)
@@ -630,6 +631,44 @@ var ConversionDiagram = new Class({
 			.text(function(datum){
 			return formatDate(datum.date);
 		});
+	},
+
+	updateMonthList: function () {
+
+		var self = this;
+		var attachedDates = self.monthListContainer.selectAll('.DateGroup').data(self.orderedDates);
+
+		console.log(attachedDates);
+		attachedDates.selectAll('rect.DateBox')
+			.classed('Selected', function(datum){
+				return datum.selected;
+			});
+		
+		boxWidth = 120;
+		boxXOffset = 21;
+
+		pathIndex = 0;
+		attachedDates.selectAll('path.DateAnchorLine')
+			// .classed('Selected', function(datum){
+			// 	return datum.selected;
+			// })
+			.transition()
+			.attr('d', function(datum){
+				pathIndex += 1;
+				console.log(this,datum,pathIndex);
+				return 	'M '+ (boxWidth + boxXOffset) + ',' + 
+						(50 * (pathIndex - 1) + 30 + 15 ) +
+						' L' + (boxWidth + boxXOffset + ((datum.selected)? 59 : 15) ) +',' + 
+						(50 * (pathIndex - 1) + 30 + 15);
+			});
+
+		attachedDates.selectAll('circle.DateAnchorDot').transition()
+			.attr('cx', function(datum){
+				return boxWidth + boxXOffset + ((datum.selected)? 59 : 15);
+			})
+			.attr('r',function(datum){
+				return (datum.selected)? 5 : 2; 
+			});	
 	}
 });
 
