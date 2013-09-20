@@ -396,7 +396,7 @@ var ConversionDiagram = new Class({
 		var attachedData = self.diagramContainer.selectAll('.DatumGroup').data(self.currentDataObject);
 
 		self.updateComponents(attachedData);
-		//self.removeComponents(attachedData);
+		self.removeComponents(attachedData);
 		self.enterComponents(attachedData);
 	},
 
@@ -475,11 +475,16 @@ var ConversionDiagram = new Class({
 
 				dataGroup.selectAll('path.ConversionPath').each(function(path, index){
 
-				 		d3.select(this).transition()
-				 			.attr('d', self.createConversionPath(rectArray[index], rectArray[index + 1]));	
+			 		d3.select(this).transition()
+			 			.attr('d', self.createConversionPath(rectArray[index], rectArray[index + 1]));	
 				});
 			}
 		});
+	},
+
+	removeComponents: function (attachedData){
+
+		attachedData.exit().remove();
 	},
 
 	/**
